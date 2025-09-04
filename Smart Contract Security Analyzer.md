@@ -238,5 +238,5 @@ For technical support or questions about the Smart Contract Security Analyzer:
 
 ---
 
-**Built for security researchers and bug bounty hunters** | **Powered by AI and modern web technologies**
+**Purpose-built for security researchers and bug bounty hunters**
 
