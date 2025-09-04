@@ -89,6 +89,9 @@ curl -X POST http://localhost:5000/api/report/generate \
 - PDF output via WeasyPrint is optional and not required for core usage. On Windows it may need extra system dependencies; Markdown export works out of the box.
 - If you prefer not to use AI features, set `ENABLE_AI=false` (engine still returns strong static findings).
 
+## License
+This project is licensed under the Apache License 2.0. See the `LICENSE` file for details.
+
 ## Development
 - Main entry point: `src/app.py` (Flask app + blueprints)
 - Key services:
