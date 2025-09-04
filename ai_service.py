@@ -6,7 +6,8 @@ import json
 class AIService:
     def __init__(self):
         self.client = OpenAI()
-        self.model = "gpt-4"
+        # Allow overriding the model via env, default to a strong reasoning model
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     
     def enhance_vulnerability(self, vulnerability: Dict[str, Any], contract_code: str) -> Dict[str, Any]:
         """Enhance vulnerability with AI analysis and generate POC"""
@@ -17,18 +18,28 @@ class AIService:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a smart contract security expert. Analyze vulnerabilities and provide detailed explanations with proof-of-concept code."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": "You are a smart contract security expert. Respond in compact JSON unless asked otherwise."},
+                    {"role": "user", "content": prompt + "\nOutput strictly as JSON with keys: detailed_description, attack_scenarios, recommended_fix, poc_code."}
                 ],
-                temperature=0.3,
-                max_tokens=2000
+                temperature=0.2,
+                max_tokens=1200
             )
-            
-            ai_analysis = response.choices[0].message.content
-            
-            # Parse AI response and enhance vulnerability
+
+            ai_text = response.choices[0].message.content
+
+            # Prefer strict JSON parsing; fallback to regex extraction
+            structured = self._safe_json_loads(ai_text)
             enhanced_vuln = vulnerability.copy()
-            enhanced_vuln.update(self._parse_ai_response(ai_analysis, vulnerability['type']))
+            if structured:
+                enhanced_vuln.update({
+                    'ai_analysis': ai_text,
+                    'detailed_description': structured.get('detailed_description', ''),
+                    'attack_scenarios': structured.get('attack_scenarios', ''),
+                    'recommended_fix': structured.get('recommended_fix', ''),
+                    'poc_code': structured.get('poc_code', '')
+                })
+            else:
+                enhanced_vuln.update(self._parse_ai_response(ai_text, vulnerability['type']))
             
             return enhanced_vuln
             
@@ -65,13 +76,13 @@ class AIService:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a smart contract security researcher. Generate working proof-of-concept exploits for educational purposes."},
+                    {"role": "system", "content": "You are a smart contract security researcher. Output compact JSON only."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.2,
-                max_tokens=1500
+                temperature=0.15,
+                max_tokens=1000
             )
-            
+
             return response.choices[0].message.content
             
         except Exception as e:
@@ -116,11 +127,11 @@ class AIService:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a senior smart contract auditor providing executive summaries."},
+                    {"role": "system", "content": "You are a senior smart contract auditor. Provide JSON only."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,
-                max_tokens=1000
+                temperature=0.2,
+                max_tokens=900
             )
             
             try:
@@ -208,6 +219,20 @@ class AIService:
             return section_match.group(2).strip()
         
         return ""
+
+    def _safe_json_loads(self, text: str):
+        try:
+            return json.loads(text)
+        except Exception:
+            # Try to find a JSON object within text
+            try:
+                start = text.find('{')
+                end = text.rfind('}')
+                if start != -1 and end != -1 and end > start:
+                    return json.loads(text[start:end+1])
+            except Exception:
+                return None
+        return None
     
     def _calculate_overall_risk(self, vulnerabilities: List[Dict[str, Any]]) -> str:
         """Calculate overall risk level based on vulnerabilities"""

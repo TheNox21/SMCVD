@@ -124,7 +124,9 @@ src/
 
 ### Detection Methods
 - **Pattern Matching**: Known vulnerability patterns in Solidity code
-- **AI Analysis**: OpenAI GPT-4 powered deep code analysis
+- **Contextual Filters**: Pragma parsing, unchecked blocks, SafeMath usage, access modifiers
+- **Heuristic Signals**: Multi-signal corroboration for reentrancy and arithmetic issues
+- **AI Analysis**: Model-guided explanations and PoCs (JSON-structured)
 - **Static Analysis**: Code structure and flow analysis
 - **Best Practice Checks**: Solidity coding standard compliance
 
@@ -140,6 +142,17 @@ src/
 - **Proof-of-Concept**: Working exploit demonstrations
 - **Mitigation Strategies**: Specific fix recommendations
 - **Professional Format**: Industry-standard report structure
+- **Confidence ratings**
+
+### False Positive Suppression
+- Inline suppression: `// analyzer-ignore: reentrancy` or file-level `// analyzer-ignore-file: integer_overflow`
+- Solidity ≥0.8 arithmetic is treated as safe unless inside `unchecked {}`
+- SafeMath usage, `onlyOwner`/`AccessControl`, and `nonReentrant` reduce or filter findings
+- Reentrancy requires call-before-state-change corroboration to report
+
+### Configuration
+- `MIN_CONFIDENCE` (env): Minimum confidence threshold (default `0.65`)
+- `OPENAI_MODEL` (env): Override default AI model (default `gpt-4o-mini`)
 
 ## 📈 Sample Analysis Results
 
