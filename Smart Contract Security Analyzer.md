@@ -19,7 +19,7 @@ A comprehensive web application for bug bounty hunters that analyzes smart contr
 ### Core Functionality
 - **GitHub Integration**: Seamlessly analyze smart contracts directly from GitHub repositories
 - **File Upload**: Support for direct Solidity file uploads (.sol files)
-- **AI-Powered Analysis**: Advanced vulnerability detection using OpenAI GPT models
+- **Advanced Analysis**: Detailed vulnerability detection with structured explanations and PoCs
 - **Real-time Progress**: Live progress tracking with detailed status updates
 - **Professional Reports**: Generate comprehensive bug bounty reports in multiple formats
 
@@ -90,7 +90,7 @@ src/
 ### Backend
 - **Flask**: Lightweight Python web framework
 - **Flask-CORS**: Cross-origin resource sharing
-- **OpenAI API**: AI-powered vulnerability analysis
+- **Language Model API**: For generating structured explanations and PoCs
 - **PyGithub**: GitHub API integration
 - **Jinja2**: Template engine for report generation
 - **WeasyPrint**: PDF generation capability
@@ -114,7 +114,7 @@ src/
 
 1. **Input**: User provides GitHub repository URL or uploads Solidity files
 2. **Validation**: System validates input and checks for smart contracts
-3. **Analysis**: AI-powered engine analyzes code for vulnerabilities
+3. **Analysis**: The analysis engine reviews code for vulnerabilities
 4. **Progress**: Real-time progress tracking with detailed status updates
 5. **Results**: Comprehensive vulnerability report with severity ratings
 6. **Report**: Generate professional bug bounty report with POCs

@@ -166,8 +166,8 @@ def analyze_files(job_id, file_paths):
                     enhanced_vuln = vuln
                 vulnerabilities.append(enhanced_vuln)
 
-        analysis_jobs[job_id]['status'] = 'ai_analysis'
-        analysis_jobs[job_id]['message'] = 'Running AI-powered analysis...'
+        analysis_jobs[job_id]['status'] = 'analysis'
+        analysis_jobs[job_id]['message'] = 'Running advanced analysis...'
         analysis_jobs[job_id]['progress'] = 85
 
         enable_ai = os.getenv('ENABLE_AI', 'true').lower() == 'true'
@@ -176,7 +176,7 @@ def analyze_files(job_id, file_paths):
         else:
             overall_assessment = {
                 'risk_level': 'medium' if vulnerabilities else 'low',
-                'summary': 'Static analysis findings summarized without AI.',
+                'summary': 'Static analysis findings summary.',
                 'recommendations': ['Review identified issues', 'Add tests', 'Follow best practices']
             }
 

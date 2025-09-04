@@ -7,14 +7,14 @@
 |                                                          |
 |  ┌────────────────────────────────────────────────────┐ |
 |  │              Hero Section                          │ |
-|  │  "AI-Powered Smart Contract Vulnerability         │ |
+|  │  "Smart Contract Vulnerability Analyzer            │ |
 |  │   Detection for Bug Bounty Hunters"               │ |
 |  │                                                    │ |
 |  │  [Get Started] [Learn More]                       │ |
 |  └────────────────────────────────────────────────────┘ |
 |                                                          |
 |  Features:                                               |
-|  • GitHub Integration  • AI Analysis  • Report Gen      |
+|  • GitHub Integration  • Deep Analysis  • Report Gen     |
 +----------------------------------------------------------+
 ```
 
@@ -49,7 +49,7 @@
 |  Repository: user/smart-contract-repo                    |
 |  ████████████████████████████████████████████ 75%       |
 |                                                          |
-|  Current Step: AI-powered vulnerability analysis        |
+|  Current Step: Vulnerability analysis                   |
 |                                                          |
 |  ┌─────────────┬─────────────┬─────────────┬───────────┐|
 |  │Files Found  │Vulnerabilities│Severity    │Status     ││
