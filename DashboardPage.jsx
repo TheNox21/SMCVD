@@ -79,7 +79,7 @@ const DashboardPage = () => {
       { id: 'fetching', label: 'Fetching', description: 'Downloading repository files' },
       { id: 'scanning', label: 'Scanning', description: 'Finding smart contract files' },
       { id: 'processing', label: 'Processing', description: 'Analyzing contract code' },
-      { id: 'ai_analysis', label: 'AI Analysis', description: 'Running AI-powered vulnerability detection' },
+      { id: 'analysis', label: 'Analysis', description: 'Running vulnerability detection' },
       { id: 'completed', label: 'Completed', description: 'Analysis finished successfully' }
     ]
 

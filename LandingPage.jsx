@@ -19,7 +19,7 @@ const LandingPage = () => {
     },
     {
       icon: Brain,
-      title: 'AI-Powered Analysis',
+      title: 'Advanced Analysis',
       description: 'Advanced machine learning algorithms detect complex vulnerabilities',
       color: 'text-purple-600'
     },
@@ -93,14 +93,14 @@ const LandingPage = () => {
             className="text-center"
           >
             <Badge variant="secondary" className="mb-4">
-              AI-Powered Security Analysis
+              Comprehensive Security Analysis
             </Badge>
             <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6">
               Smart Contract
               <span className="text-blue-600 block">Vulnerability Detection</span>
             </h1>
             <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
-              Discover security vulnerabilities in smart contracts using advanced AI analysis. 
+              Discover security vulnerabilities in smart contracts using advanced analysis. 
               Generate professional bug bounty reports with proof-of-concept exploits in minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -225,7 +225,7 @@ const LandingPage = () => {
               Comprehensive Vulnerability Detection
             </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Our AI-powered engine detects a wide range of smart contract vulnerabilities
+              Our analysis engine detects a wide range of smart contract vulnerabilities
             </p>
           </motion.div>
 
