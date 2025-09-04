@@ -1,0 +1,70 @@
+{
+  "info": {
+    "name": "SMCVD API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "6c1d8c0a-3d5e-4b3d-9e3f-6a6f9a0b9c11"
+  },
+  "item": [
+    {
+      "name": "Analyze (GitHub)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{base_url}}/api/analyze", "host": ["{{base_url}}"], "path": ["api", "analyze"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"github_url\": \"https://github.com/OWNER/REPO\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Analyze (Files)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{base_url}}/api/analyze", "host": ["{{base_url}}"], "path": ["api", "analyze"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"files\": [\n    { \"name\": \"Contract.sol\", \"content\": \"contract C { }\" }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Status",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/api/status/{{job_id}}", "host": ["{{base_url}}"], "path": ["api", "status", "{{job_id}}"] }
+      }
+    },
+    {
+      "name": "Results",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/api/results/{{job_id}}", "host": ["{{base_url}}"], "path": ["api", "results", "{{job_id}}"] }
+      }
+    },
+    {
+      "name": "Report: Generate (Markdown)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{base_url}}/api/report/generate", "host": ["{{base_url}}"], "path": ["api", "report", "generate"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"job_id\": \"{{job_id}}\",\n  \"format\": \"markdown\",\n  \"template\": \"professional\"\n}"
+        }
+      }
+    }
+  ],
+  "event": [],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000" },
+    { "key": "job_id", "value": "REPLACE_WITH_JOB_ID" }
+  ]
+}
