@@ -51,7 +51,11 @@ curl -X POST http://localhost:5000/api/analyze \
       "in_scope_vulns": ["reentrancy", "integer_overflow"],
       "out_of_scope_vulns": ["dos_gas_limit"],
       "rules": ["no_mainnet_exploits"],
-      "disclosure": "coordinated"
+      "disclosure": "coordinated",
+      "severity_allow": { "reentrancy": ["critical", "high"], "access_control": ["high", "medium"] },
+      "path_include": ["contracts/"],
+      "path_exclude": ["node_modules/"],
+      "reject_if": ["no_mainnet_exploits"]
     }
   }'
 ```
@@ -73,7 +77,10 @@ curl -X POST http://localhost:5000/api/analyze \
     "program_scope": {
       "focus_areas": ["reentrancy"],
       "in_scope_vulns": ["reentrancy"],
-      "out_of_scope_vulns": ["front_running"]
+      "out_of_scope_vulns": ["front_running"],
+      "severity_allow": { "reentrancy": ["critical", "high"] },
+      "path_include": ["contracts/"],
+      "reject_if": ["no_mainnet_exploits"]
     }
   }'
 ```

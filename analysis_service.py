@@ -480,10 +480,32 @@ class AnalysisService:
         in_scope_vulns = set([v.lower() for v in program_scope.get('in_scope_vulns', [])])
         out_of_scope_vulns = set([v.lower() for v in program_scope.get('out_of_scope_vulns', [])])
         focus_areas = set([v.lower() for v in program_scope.get('focus_areas', [])])
+        # Extended schema
+        severity_allow = {k.lower(): set([s.lower() for s in v]) for k, v in program_scope.get('severity_allow', {}).items()}  # { vuln_type: [severities...] }
+        path_include = [p for p in program_scope.get('path_include', [])]  # substrings or globs (basic substr)
+        path_exclude = [p for p in program_scope.get('path_exclude', [])]
+        reject_if = [r.lower() for r in program_scope.get('reject_if', [])]  # simple rule keywords
 
         filtered: List[Dict[str, Any]] = []
         for f in findings:
             vtype = f.get('type', '').lower()
+            file_path = f.get('file_path', '')
+            severity = (f.get('severity') or 'low').lower()
+
+            # Path-based include/exclude
+            if path_include and not any(seg in file_path for seg in path_include):
+                continue
+            if path_exclude and any(seg in file_path for seg in path_exclude):
+                continue
+
+            # Reject rules (e.g., "no_mainnet_exploits") can be extended; here we just tag
+            if reject_if:
+                f_rules = ' '.join(reject_if)
+                if 'no_mainnet_exploits' in f_rules:
+                    # example: downgrade issues that imply on-chain active exploitation
+                    if 'poc' in f and f['poc']:
+                        f = f.copy()
+                        f['poc'] = None
             # Exclude explicit out-of-scope vulnerability types
             if vtype in out_of_scope_vulns:
                 continue
@@ -495,6 +517,15 @@ class AnalysisService:
                 downgraded['confidence'] = min(downgraded.get('confidence', 0.6), 0.6)
                 filtered.append(downgraded)
                 continue
+            # Severity allowlist per vuln type
+            if severity_allow:
+                allowed = severity_allow.get(vtype)
+                if allowed and severity not in allowed:
+                    downgraded = f.copy()
+                    downgraded['severity'] = 'low'
+                    downgraded['confidence'] = min(downgraded.get('confidence', 0.6), 0.6)
+                    filtered.append(downgraded)
+                    continue
             # Slightly boost confidence for focus areas
             boosted = f.copy()
             if vtype in focus_areas:

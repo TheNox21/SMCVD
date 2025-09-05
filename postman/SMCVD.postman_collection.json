@@ -15,7 +15,7 @@
         "url": { "raw": "{{base_url}}/api/analyze", "host": ["{{base_url}}"], "path": ["api", "analyze"] },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"github_url\": \"https://github.com/OWNER/REPO\",\n  \"program_scope\": {\n    \"focus_areas\": [\"reentrancy\", \"access_control\"],\n    \"in_scope_vulns\": [\"reentrancy\", \"integer_overflow\"],\n    \"out_of_scope_vulns\": [\"dos_gas_limit\"],\n    \"rules\": [\"no_mainnet_exploits\"],\n    \"disclosure\": \"coordinated\"\n  }\n}"
+          "raw": "{\n  \"github_url\": \"https://github.com/OWNER/REPO\",\n  \"program_scope\": {\n    \"focus_areas\": [\"reentrancy\", \"access_control\"],\n    \"in_scope_vulns\": [\"reentrancy\", \"integer_overflow\"],\n    \"out_of_scope_vulns\": [\"dos_gas_limit\"],\n    \"rules\": [\"no_mainnet_exploits\"],\n    \"disclosure\": \"coordinated\",\n    \"severity_allow\": { \"reentrancy\": [\"critical\", \"high\"], \"access_control\": [\"high\", \"medium\"] },\n    \"path_include\": [\"contracts/\"],\n    \"path_exclude\": [\"node_modules/\"],\n    \"reject_if\": [\"no_mainnet_exploits\"]\n  }\n}"
         }
       }
     },
@@ -29,7 +29,7 @@
         "url": { "raw": "{{base_url}}/api/analyze", "host": ["{{base_url}}"], "path": ["api", "analyze"] },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"files\": [\n    { \"name\": \"Contract.sol\", \"content\": \"contract C { }\" }\n  ],\n  \"program_scope\": {\n    \"focus_areas\": [\"reentrancy\"],\n    \"in_scope_vulns\": [\"reentrancy\"],\n    \"out_of_scope_vulns\": [\"front_running\"]\n  }\n}"
+          "raw": "{\n  \"files\": [\n    { \"name\": \"Contract.sol\", \"content\": \"contract C { }\" }\n  ],\n  \"program_scope\": {\n    \"focus_areas\": [\"reentrancy\"],\n    \"in_scope_vulns\": [\"reentrancy\"],\n    \"out_of_scope_vulns\": [\"front_running\"],\n    \"severity_allow\": { \"reentrancy\": [\"critical\", \"high\"] },\n    \"path_include\": [\"contracts/\"],\n    \"reject_if\": [\"no_mainnet_exploits\"]\n  }\n}"
         }
       }
     },
