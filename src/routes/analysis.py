@@ -37,6 +37,9 @@ def start_analysis():
             'created_at': time.time()
         }
 
+        # Optional program scope passed by client to tailor analysis
+        analysis_jobs[job_id]['program_scope'] = data.get('program_scope')
+
         if 'github_url' in data:
             thread = threading.Thread(target=analyze_github_repo, args=(job_id, data['github_url']))
         elif 'files' in data:
@@ -146,6 +149,7 @@ def analyze_files(job_id, file_paths):
         ai_service = AIService()
         total_files = len(file_paths)
         vulnerabilities = []
+        program_scope = analysis_jobs.get(job_id, {}).get('program_scope')
 
         for i, file_path in enumerate(file_paths):
             progress = 30 + (i / total_files) * 50
@@ -157,11 +161,14 @@ def analyze_files(job_id, file_paths):
                 content = f.read()
 
             file_vulnerabilities = analysis_service.analyze_contract(content, file_path)
+            # Apply program scope filtering/downgrading
+            if program_scope:
+                file_vulnerabilities = analysis_service.apply_program_scope(file_vulnerabilities, program_scope)
 
             enable_ai = os.getenv('ENABLE_AI', 'true').lower() == 'true'
             for vuln in file_vulnerabilities:
                 if enable_ai:
-                    enhanced_vuln = ai_service.enhance_vulnerability(vuln, content)
+                    enhanced_vuln = ai_service.enhance_vulnerability(vuln, content, program_scope=program_scope)
                 else:
                     enhanced_vuln = vuln
                 vulnerabilities.append(enhanced_vuln)
@@ -172,7 +179,7 @@ def analyze_files(job_id, file_paths):
 
         enable_ai = os.getenv('ENABLE_AI', 'true').lower() == 'true'
         if enable_ai:
-            overall_assessment = ai_service.get_overall_assessment(vulnerabilities)
+            overall_assessment = ai_service.get_overall_assessment(vulnerabilities, program_scope=program_scope)
         else:
             overall_assessment = {
                 'risk_level': 'medium' if vulnerabilities else 'low',

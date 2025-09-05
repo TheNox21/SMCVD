@@ -45,7 +45,14 @@ The API will start on `http://localhost:5000`.
 curl -X POST http://localhost:5000/api/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "github_url": "https://github.com/OWNER/REPO"
+    "github_url": "https://github.com/OWNER/REPO",
+    "program_scope": {
+      "focus_areas": ["reentrancy", "access_control"],
+      "in_scope_vulns": ["reentrancy", "integer_overflow"],
+      "out_of_scope_vulns": ["dos_gas_limit"],
+      "rules": ["no_mainnet_exploits"],
+      "disclosure": "coordinated"
+    }
   }'
 ```
 Response contains `job_id`. Poll status and fetch results:
@@ -62,7 +69,12 @@ curl -X POST http://localhost:5000/api/analyze \
   -d '{
     "files": [
       {"name": "Contract.sol", "content": "contract C { /* solidity code */ }"}
-    ]
+    ],
+    "program_scope": {
+      "focus_areas": ["reentrancy"],
+      "in_scope_vulns": ["reentrancy"],
+      "out_of_scope_vulns": ["front_running"]
+    }
   }'
 ```
 

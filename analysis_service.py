@@ -1,15 +1,3 @@
-# Copyright 2025 TheNox21
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#     http://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import re
 import os
 from typing import List, Dict, Any
@@ -17,11 +5,6 @@ from typing import List, Dict, Any
 class AnalysisService:
     def __init__(self):
         self.vulnerability_patterns = self._load_vulnerability_patterns()
-        # Minimum confidence required to report a finding (tunable via env)
-        try:
-            self.min_confidence = float(os.getenv('MIN_CONFIDENCE', '0.65'))
-        except ValueError:
-            self.min_confidence = 0.65
     
     def _load_vulnerability_patterns(self):
         """Load vulnerability detection patterns"""
@@ -477,4 +460,46 @@ class AnalysisService:
             'event_count': len(re.findall(r'event\s+\w+', contract_code)),
             'external_calls': len(re.findall(r'\.call\(|\.send\(|\.transfer\(', contract_code))
         }
+
+    def apply_program_scope(self, findings: List[Dict[str, Any]], program_scope: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Filter or adjust findings based on bug bounty program scope.
+        program_scope example:
+        {
+          "focus_areas": ["reentrancy", "access_control"],
+          "in_scope": ["smart_contract", "solidity"],
+          "out_of_scope": ["web", "mobile"],
+          "in_scope_vulns": ["reentrancy", "integer_overflow"],
+          "out_of_scope_vulns": ["dos_gas_limit"],
+          "rules": ["no_mainnet_exploits"],
+          "disclosure": "coordinated"
+        }
+        """
+        if not program_scope:
+            return findings
+
+        in_scope_vulns = set([v.lower() for v in program_scope.get('in_scope_vulns', [])])
+        out_of_scope_vulns = set([v.lower() for v in program_scope.get('out_of_scope_vulns', [])])
+        focus_areas = set([v.lower() for v in program_scope.get('focus_areas', [])])
+
+        filtered: List[Dict[str, Any]] = []
+        for f in findings:
+            vtype = f.get('type', '').lower()
+            # Exclude explicit out-of-scope vulnerability types
+            if vtype in out_of_scope_vulns:
+                continue
+            # If in-scope vulns specified, keep only those
+            if in_scope_vulns and vtype not in in_scope_vulns:
+                # downgrade severity instead of dropping completely
+                downgraded = f.copy()
+                downgraded['severity'] = 'low'
+                downgraded['confidence'] = min(downgraded.get('confidence', 0.6), 0.6)
+                filtered.append(downgraded)
+                continue
+            # Slightly boost confidence for focus areas
+            boosted = f.copy()
+            if vtype in focus_areas:
+                boosted['confidence'] = min(boosted.get('confidence', 0.7) * 1.1, 1.0)
+            filtered.append(boosted)
+
+        return filtered
 

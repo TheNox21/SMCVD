@@ -23,11 +23,11 @@ class AIService:
         # Allow overriding the model via env, default to a strong reasoning model
         self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     
-    def enhance_vulnerability(self, vulnerability: Dict[str, Any], contract_code: str) -> Dict[str, Any]:
+    def enhance_vulnerability(self, vulnerability: Dict[str, Any], contract_code: str, program_scope: Dict[str, Any] = None) -> Dict[str, Any]:
         """Enhance vulnerability with AI analysis and generate POC"""
         try:
             # Create prompt for vulnerability analysis
-            prompt = self._create_vulnerability_prompt(vulnerability, contract_code)
+            prompt = self._create_vulnerability_prompt(vulnerability, contract_code, program_scope=program_scope)
             
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -102,7 +102,7 @@ class AIService:
         except Exception as e:
             return f"POC generation failed: {str(e)}"
     
-    def get_overall_assessment(self, vulnerabilities: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def get_overall_assessment(self, vulnerabilities: List[Dict[str, Any]], program_scope: Dict[str, Any] = None) -> Dict[str, Any]:
         """Get overall security assessment from AI"""
         try:
             if not vulnerabilities:
@@ -121,6 +121,7 @@ class AIService:
                     'name': vuln['name']
                 })
             
+            scope_text = json.dumps(program_scope, indent=2) if program_scope else "{}"
             prompt = f"""
             Analyze this smart contract security assessment and provide an overall evaluation:
             
@@ -129,6 +130,9 @@ class AIService:
             Vulnerability breakdown:
             {json.dumps(vuln_summary, indent=2)}
             
+            Program scope (guidance for relevance and acceptance criteria):
+            {scope_text}
+
             Please provide:
             1. Overall risk level (critical/high/medium/low)
             2. Executive summary of findings
@@ -167,10 +171,11 @@ class AIService:
                 'financial_impact': 'Unknown'
             }
     
-    def _create_vulnerability_prompt(self, vulnerability: Dict[str, Any], contract_code: str) -> str:
+    def _create_vulnerability_prompt(self, vulnerability: Dict[str, Any], contract_code: str, program_scope: Dict[str, Any] = None) -> str:
         """Create prompt for vulnerability analysis"""
         relevant_code = self._extract_relevant_code(contract_code, vulnerability['line_number'])
         
+        scope_text = json.dumps(program_scope, indent=2) if program_scope else "{}"
         return f"""
         Analyze this smart contract vulnerability in detail:
         
@@ -186,6 +191,9 @@ class AIService:
         Relevant code context:
         {relevant_code}
         
+        Program scope (to tailor relevance and acceptance):
+        {scope_text}
+
         Please provide:
         1. Detailed technical explanation of the vulnerability
         2. Specific attack scenarios
