@@ -149,6 +149,10 @@ src/
 - Solidity ≥0.8 arithmetic is treated as safe unless inside `unchecked {}`
 - SafeMath usage, `onlyOwner`/`AccessControl`, and `nonReentrant` reduce or filter findings
 - Reentrancy requires call-before-state-change corroboration to report
+- Advanced multi-signal verification reduces false positives by cross-referencing multiple indicators
+- Contextual analysis identifies likely false positives in view functions, validation checks, and constructors
+- Anti-pattern detection filters out safe code patterns
+- Default confidence threshold increased to 0.8 for higher precision
 
 ### Configuration
 - `MIN_CONFIDENCE` (env): Minimum confidence threshold (default `0.65`)

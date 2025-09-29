@@ -1,0 +1,294 @@
+"""
+Copyright 2025 TheNox21
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+import os
+from openai import OpenAI
+from typing import Dict, Any, List
+import json
+
+class AIService:
+    def __init__(self):
+        # Try to use centralized config first, fallback to env vars
+        try:
+            from src.config.settings import config
+            self.client = OpenAI(api_key=config.ai.openai_api_key) if config.ai.openai_api_key else OpenAI()
+            self.model = config.ai.openai_model
+            self.max_tokens = config.ai.max_tokens
+            self.temperature = config.ai.temperature
+            self.timeout = config.ai.timeout
+        except ImportError:
+            # Fallback to environment variables
+            self.client = OpenAI()
+            self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+            self.max_tokens = int(os.getenv("AI_MAX_TOKENS", "1200"))
+            self.temperature = float(os.getenv("AI_TEMPERATURE", "0.2"))
+            self.timeout = int(os.getenv("AI_TIMEOUT", "30"))
+    
+    def enhance_vulnerability(self, vulnerability: Dict[str, Any], contract_code: str, program_scope: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Enhance vulnerability with AI analysis and generate POC"""
+        try:
+            # Create prompt for vulnerability analysis
+            prompt = self._create_vulnerability_prompt(vulnerability, contract_code, program_scope=program_scope)
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a smart contract security expert. Respond in compact JSON unless asked otherwise."},
+                    {"role": "user", "content": prompt + "\nOutput strictly as JSON with keys: detailed_description, attack_scenarios, recommended_fix, poc_code."}
+                ],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
+
+            ai_text = response.choices[0].message.content
+
+            # Prefer strict JSON parsing; fallback to regex extraction
+            structured = self._safe_json_loads(ai_text)
+            enhanced_vuln = vulnerability.copy()
+            if structured:
+                enhanced_vuln.update({
+                    'ai_analysis': ai_text,
+                    'detailed_description': structured.get('detailed_description', ''),
+                    'attack_scenarios': structured.get('attack_scenarios', ''),
+                    'recommended_fix': structured.get('recommended_fix', ''),
+                    'poc_code': structured.get('poc_code', '')
+                })
+            else:
+                enhanced_vuln.update(self._parse_ai_response(ai_text, vulnerability['type']))
+            
+            return enhanced_vuln
+            
+        except Exception as e:
+            # Return original vulnerability if AI enhancement fails
+            vulnerability['ai_error'] = f"AI enhancement failed: {str(e)}"
+            return vulnerability
+    
+    def generate_poc(self, vulnerability: Dict[str, Any], contract_code: str) -> str:
+        """Generate proof-of-concept exploit code"""
+        try:
+            prompt = f"""
+            Generate a proof-of-concept exploit for this smart contract vulnerability:
+            
+            Vulnerability: {vulnerability['name']}
+            Type: {vulnerability['type']}
+            Severity: {vulnerability['severity']}
+            Description: {vulnerability['description']}
+            
+            Vulnerable code line: {vulnerability['line_content']}
+            Function: {vulnerability['function_name']}
+            
+            Contract code snippet:
+            {self._extract_relevant_code(contract_code, vulnerability['line_number'])}
+            
+            Please provide:
+            1. A working exploit script in JavaScript using ethers.js
+            2. Step-by-step explanation of the attack
+            3. Expected outcome/impact
+            
+            Format the response as a JSON object with keys: 'exploit_code', 'explanation', 'impact'.
+            """
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a smart contract security researcher. Output compact JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.temperature * 0.75,  # Slightly lower for POC generation
+                max_tokens=self.max_tokens - 200  # Reserve some tokens
+            )
+
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            return f"POC generation failed: {str(e)}"
+    
+    def get_overall_assessment(self, vulnerabilities: List[Dict[str, Any]], program_scope: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Get overall security assessment from AI"""
+        try:
+            if not vulnerabilities:
+                return {
+                    'risk_level': 'low',
+                    'summary': 'No significant vulnerabilities detected.',
+                    'recommendations': ['Continue following security best practices']
+                }
+            
+            # Create summary of vulnerabilities
+            vuln_summary = []
+            for vuln in vulnerabilities:
+                vuln_summary.append({
+                    'type': vuln['type'],
+                    'severity': vuln['severity'],
+                    'name': vuln['name']
+                })
+            
+            scope_text = json.dumps(program_scope, indent=2) if program_scope else "{}"
+            prompt = f"""
+            Analyze this smart contract security assessment and provide an overall evaluation:
+            
+            Vulnerabilities found: {len(vulnerabilities)}
+            
+            Vulnerability breakdown:
+            {json.dumps(vuln_summary, indent=2)}
+            
+            Program scope (guidance for relevance and acceptance criteria):
+            {scope_text}
+
+            Please provide:
+            1. Overall risk level (critical/high/medium/low)
+            2. Executive summary of findings
+            3. Top 3 priority recommendations
+            4. Estimated potential financial impact
+            
+            Format as JSON with keys: 'risk_level', 'summary', 'recommendations', 'financial_impact'.
+            """
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a senior smart contract auditor. Provide JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.temperature,
+                max_tokens=int(self.max_tokens * 0.75)  # 75% for assessment
+            )
+            
+            try:
+                return json.loads(response.choices[0].message.content)
+            except json.JSONDecodeError:
+                # Fallback if JSON parsing fails
+                return {
+                    'risk_level': self._calculate_overall_risk(vulnerabilities),
+                    'summary': response.choices[0].message.content,
+                    'recommendations': ['Review all identified vulnerabilities', 'Implement security best practices'],
+                    'financial_impact': 'Varies based on contract value and usage'
+                }
+            
+        except Exception as e:
+            return {
+                'risk_level': self._calculate_overall_risk(vulnerabilities),
+                'summary': f'Assessment generation failed: {str(e)}',
+                'recommendations': ['Manual security review recommended'],
+                'financial_impact': 'Unknown'
+            }
+    
+    def _create_vulnerability_prompt(self, vulnerability: Dict[str, Any], contract_code: str, program_scope: Dict[str, Any] = None) -> str:
+        """Create prompt for vulnerability analysis"""
+        relevant_code = self._extract_relevant_code(contract_code, vulnerability['line_number'])
+        
+        scope_text = json.dumps(program_scope, indent=2) if program_scope else "{}"
+        return f"""
+        Analyze this smart contract vulnerability in detail:
+        
+        Vulnerability Type: {vulnerability['type']}
+        Name: {vulnerability['name']}
+        Severity: {vulnerability['severity']}
+        CWE: {vulnerability['cwe']}
+        
+        Vulnerable line: {vulnerability['line_content']}
+        Function: {vulnerability['function_name']}
+        File: {vulnerability['file_path']}
+        
+        Relevant code context:
+        {relevant_code}
+        
+        Program scope (to tailor relevance and acceptance):
+        {scope_text}
+
+        Please provide:
+        1. Detailed technical explanation of the vulnerability
+        2. Specific attack scenarios
+        3. Potential impact and consequences
+        4. Recommended fixes and mitigations
+        5. A simple proof-of-concept if applicable
+        
+        Focus on practical, actionable insights for bug bounty reporting.
+        """
+    
+    def _extract_relevant_code(self, contract_code: str, line_number: int, context_lines: int = 10) -> str:
+        """Extract relevant code around the vulnerable line"""
+        lines = contract_code.split('\n')
+        start = max(0, line_number - context_lines - 1)
+        end = min(len(lines), line_number + context_lines)
+        
+        relevant_lines = []
+        for i in range(start, end):
+            if i < len(lines):
+                marker = " -> " if i == line_number - 1 else "    "
+                relevant_lines.append(f"{i+1:3d}{marker}{lines[i]}")
+        
+        return '\n'.join(relevant_lines)
+    
+    def _parse_ai_response(self, ai_response: str, vuln_type: str) -> Dict[str, Any]:
+        """Parse AI response and extract structured information"""
+        # Try to extract structured information from AI response
+        enhanced_data = {
+            'ai_analysis': ai_response,
+            'detailed_description': self._extract_section(ai_response, 'explanation'),
+            'attack_scenarios': self._extract_section(ai_response, 'attack'),
+            'recommended_fix': self._extract_section(ai_response, 'fix|mitigation|recommendation'),
+            'poc_code': self._extract_section(ai_response, 'proof|poc|exploit')
+        }
+        
+        return enhanced_data
+    
+    def _extract_section(self, text: str, pattern: str) -> str:
+        """Extract specific section from AI response"""
+        import re
+        
+        # Look for section headers
+        section_match = re.search(f'({pattern})[:\n]([^#]*?)(?=\n#|\n\\d+\\.|\Z)', text, re.IGNORECASE | re.DOTALL)
+        if section_match:
+            return section_match.group(2).strip()
+        
+        return ""
+
+    def _safe_json_loads(self, text: str):
+        try:
+            return json.loads(text)
+        except Exception:
+            # Try to find a JSON object within text
+            try:
+                start = text.find('{')
+                end = text.rfind('}')
+                if start != -1 and end != -1 and end > start:
+                    return json.loads(text[start:end+1])
+            except Exception:
+                return None
+        return None
+    
+    def _calculate_overall_risk(self, vulnerabilities: List[Dict[str, Any]]) -> str:
+        """Calculate overall risk level based on vulnerabilities"""
+        if not vulnerabilities:
+            return 'low'
+        
+        severity_counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
+        for vuln in vulnerabilities:
+            severity = vuln.get('severity', 'low')
+            if severity in severity_counts:
+                severity_counts[severity] += 1
+        
+        if severity_counts['critical'] > 0:
+            return 'critical'
+        elif severity_counts['high'] > 2:
+            return 'critical'
+        elif severity_counts['high'] > 0:
+            return 'high'
+        elif severity_counts['medium'] > 3:
+            return 'high'
+        elif severity_counts['medium'] > 0:
+            return 'medium'
+        else:
+            return 'low'
+

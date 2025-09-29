@@ -1,0 +1,29 @@
+2025-09-06 13:59:24,683 - __main__ - INFO - Starting SMCVD application...
+2025-09-06 14:04:28,854 - __main__ - INFO - Starting SMCVD application...
+2025-09-06 14:09:59,671 - __main__ - INFO - Starting SMCVD application...
+2025-09-06 14:19:28,794 - __main__ - INFO - Starting SMCVD application...
+2025-09-06 14:30:12,460 - __main__ - INFO - Starting SMCVD application...
+2025-09-06 14:31:28,565 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts/git/trees/6bbcfe7ed534c654a97acfbefa1be757f2db6948 failed with 403: rate limit exceeded
+2025-09-06 14:31:28,567 - github.GithubRetry - INFO - Setting next backoff to 3588.432414s
+2025-09-06 14:31:28,583 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts/git/trees/91bed0a6600e009c1d29f2458f0b977b18befb68 failed with 403: rate limit exceeded
+2025-09-06 14:31:28,584 - github.GithubRetry - INFO - Setting next backoff to 3588.415579s
+2025-09-06 14:31:28,832 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts/git/trees/827481d328a4c696fdacd0d23a51595d1747e049 failed with 403: rate limit exceeded
+2025-09-06 14:31:28,834 - github.GithubRetry - INFO - Setting next backoff to 3588.165692s
+2025-09-06 14:31:28,884 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts/git/trees/master failed with 403: rate limit exceeded
+2025-09-06 14:31:28,885 - github.GithubRetry - INFO - Setting next backoff to 3588.11423s
+2025-09-06 14:31:29,185 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts/git/trees/8a12abd827e5377a05f47131862caf7d5a96a509 failed with 403: rate limit exceeded
+2025-09-06 14:31:29,187 - github.GithubRetry - INFO - Setting next backoff to 3587.813157s
+2025-09-06 14:31:29,291 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts failed with 403: rate limit exceeded
+2025-09-06 14:31:29,291 - github.GithubRetry - INFO - Setting next backoff to 3587.708512s
+2025-09-06 14:31:29,451 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts failed with 403: rate limit exceeded
+2025-09-06 14:31:29,452 - github.GithubRetry - INFO - Setting next backoff to 3587.54768s
+2025-09-06 14:31:29,600 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts failed with 403: rate limit exceeded
+2025-09-06 14:31:29,601 - github.GithubRetry - INFO - Setting next backoff to 3587.398596s
+2025-09-06 14:31:41,294 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts failed with 403: rate limit exceeded
+2025-09-06 14:31:41,294 - github.GithubRetry - INFO - Setting next backoff to 3575.705642s
+2025-09-06 15:01:47,932 - __main__ - INFO - Starting SMCVD application...
+2025-09-06 15:07:22,275 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts failed with 403: rate limit exceeded
+2025-09-06 15:07:22,275 - github.GithubRetry - INFO - Setting next backoff to 1434.724591s
+2025-09-06 15:28:56,129 - __main__ - INFO - Starting SMCVD application...
+2025-09-06 15:29:26,427 - github.GithubRetry - INFO - Request GET /repos/kunalabs-io/sui-smart-contracts failed with 403: rate limit exceeded
+2025-09-06 15:29:26,436 - github.GithubRetry - INFO - Setting next backoff to 110.563801s

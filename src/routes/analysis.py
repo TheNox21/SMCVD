@@ -7,6 +7,19 @@ import uuid
 import threading
 import time
 
+# Try to import new components, fallback if not available
+try:
+    from src.middleware.rate_limiting import rate_limit
+    from src.models.job import JobStorage
+    use_job_storage = True
+except ImportError:
+    # Fallback decorator that does nothing
+    def rate_limit(*args, **kwargs):
+        def decorator(f):
+            return f
+        return decorator
+    use_job_storage = False
+
 from src.services.github_service import GitHubService
 from src.services.analysis_service import AnalysisService
 from src.services.ai_service import AIService
@@ -14,12 +27,38 @@ from src.services.ai_service import AIService
 
 analysis_bp = Blueprint('analysis', __name__)
 
-# In-memory storage for analysis jobs (in production, use Redis or database)
+# Initialize job storage
+if use_job_storage:
+    try:
+        job_storage = JobStorage()
+    except Exception as e:
+        print(f"Warning: Could not initialize job storage: {e}")
+        job_storage = None
+else:
+    job_storage = None
+
+# In-memory storage for analysis jobs (fallback or additional storage)
 analysis_jobs = {}
+
+
+def update_job_status(job_id, updates):
+    """Update job status in both memory and persistent storage"""
+    if job_id in analysis_jobs:
+        analysis_jobs[job_id].update(updates)
+        
+    if job_storage:
+        try:
+            # Get current job data and update it
+            current_data = job_storage.get_job(job_id) or analysis_jobs.get(job_id, {})
+            current_data.update(updates)
+            job_storage.save_job(job_id, current_data)
+        except Exception as e:
+            print(f"Warning: Could not update persistent storage: {e}")
 
 
 @analysis_bp.route('/analyze', methods=['POST'])
 @cross_origin()
+@rate_limit(limit=5, window=60)  # 5 requests per minute
 def start_analysis():
     try:
         data = request.get_json()
@@ -27,7 +66,7 @@ def start_analysis():
             return jsonify({'error': 'No data provided'}), 400
 
         job_id = str(uuid.uuid4())
-        analysis_jobs[job_id] = {
+        job_data = {
             'status': 'initializing',
             'progress': 0,
             'message': 'Starting analysis...',
@@ -36,6 +75,14 @@ def start_analysis():
             'total_files': 0,
             'created_at': time.time()
         }
+        
+        # Store in both memory and persistent storage
+        analysis_jobs[job_id] = job_data
+        if job_storage:
+            try:
+                job_storage.save_job(job_id, job_data)
+            except Exception as e:
+                print(f"Warning: Could not save job to persistent storage: {e}")
 
         # Optional program scope passed by client to tailor analysis
         analysis_jobs[job_id]['program_scope'] = data.get('program_scope')
@@ -59,9 +106,21 @@ def start_analysis():
 @cross_origin()
 def get_analysis_status(job_id):
     try:
-        if job_id not in analysis_jobs:
+        # Try persistent storage first, then memory
+        job_data = None
+        if job_storage:
+            try:
+                job_data = job_storage.get_job(job_id)
+            except Exception:
+                pass
+        
+        if not job_data and job_id in analysis_jobs:
+            job_data = analysis_jobs[job_id]
+        
+        if not job_data:
             return jsonify({'error': 'Job not found'}), 404
-        return jsonify(analysis_jobs[job_id]), 200
+            
+        return jsonify(job_data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -92,40 +151,50 @@ def get_analysis_results(job_id):
 
 def analyze_github_repo(job_id, github_url):
     try:
-        analysis_jobs[job_id]['status'] = 'fetching'
-        analysis_jobs[job_id]['message'] = 'Fetching repository from GitHub...'
-        analysis_jobs[job_id]['progress'] = 10
+        update_job_status(job_id, {
+            'status': 'fetching',
+            'message': 'Fetching repository from GitHub...',
+            'progress': 10
+        })
 
         github_service = GitHubService()
         temp_dir = github_service.clone_repository(github_url)
 
-        analysis_jobs[job_id]['status'] = 'scanning'
-        analysis_jobs[job_id]['message'] = 'Scanning for smart contract files...'
-        analysis_jobs[job_id]['progress'] = 20
+        update_job_status(job_id, {
+            'status': 'scanning',
+            'message': 'Scanning for smart contract files...',
+            'progress': 20
+        })
 
         solidity_files = find_solidity_files(temp_dir)
-        analysis_jobs[job_id]['total_files'] = len(solidity_files)
+        update_job_status(job_id, {'total_files': len(solidity_files)})
 
         if not solidity_files:
-            analysis_jobs[job_id]['status'] = 'completed'
-            analysis_jobs[job_id]['message'] = 'No Solidity files found in repository'
-            analysis_jobs[job_id]['progress'] = 100
+            update_job_status(job_id, {
+                'status': 'completed',
+                'message': 'No Solidity files found in repository',
+                'progress': 100
+            })
             return
 
         analyze_files(job_id, solidity_files)
         shutil.rmtree(temp_dir, ignore_errors=True)
     except Exception as e:
-        analysis_jobs[job_id]['status'] = 'error'
-        analysis_jobs[job_id]['message'] = f'Error: {str(e)}'
-        analysis_jobs[job_id]['progress'] = 0
+        update_job_status(job_id, {
+            'status': 'error',
+            'message': f'Error: {str(e)}',
+            'progress': 0
+        })
 
 
 def analyze_uploaded_files(job_id, files):
     try:
         temp_dir = tempfile.mkdtemp()
-        analysis_jobs[job_id]['status'] = 'processing'
-        analysis_jobs[job_id]['message'] = 'Processing uploaded files...'
-        analysis_jobs[job_id]['progress'] = 10
+        update_job_status(job_id, {
+            'status': 'processing',
+            'message': 'Processing uploaded files...',
+            'progress': 10
+        })
 
         file_paths = []
         for file_data in files:
@@ -134,13 +203,15 @@ def analyze_uploaded_files(job_id, files):
                 f.write(file_data['content'])
             file_paths.append(file_path)
 
-        analysis_jobs[job_id]['total_files'] = len(file_paths)
+        update_job_status(job_id, {'total_files': len(file_paths)})
         analyze_files(job_id, file_paths)
         shutil.rmtree(temp_dir, ignore_errors=True)
     except Exception as e:
-        analysis_jobs[job_id]['status'] = 'error'
-        analysis_jobs[job_id]['message'] = f'Error: {str(e)}'
-        analysis_jobs[job_id]['progress'] = 0
+        update_job_status(job_id, {
+            'status': 'error',
+            'message': f'Error: {str(e)}',
+            'progress': 0
+        })
 
 
 def analyze_files(job_id, file_paths):
@@ -153,9 +224,11 @@ def analyze_files(job_id, file_paths):
 
         for i, file_path in enumerate(file_paths):
             progress = 30 + (i / total_files) * 50
-            analysis_jobs[job_id]['progress'] = int(progress)
-            analysis_jobs[job_id]['message'] = f'Analyzing {os.path.basename(file_path)}...'
-            analysis_jobs[job_id]['files_analyzed'] = i + 1
+            update_job_status(job_id, {
+                'progress': int(progress),
+                'message': f'Analyzing {os.path.basename(file_path)}...',
+                'files_analyzed': i + 1
+            })
 
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -173,9 +246,11 @@ def analyze_files(job_id, file_paths):
                     enhanced_vuln = vuln
                 vulnerabilities.append(enhanced_vuln)
 
-        analysis_jobs[job_id]['status'] = 'analysis'
-        analysis_jobs[job_id]['message'] = 'Running advanced analysis...'
-        analysis_jobs[job_id]['progress'] = 85
+        update_job_status(job_id, {
+            'status': 'analysis',
+            'message': 'Running advanced analysis...',
+            'progress': 85
+        })
 
         enable_ai = os.getenv('ENABLE_AI', 'true').lower() == 'true'
         if enable_ai:
@@ -187,15 +262,19 @@ def analyze_files(job_id, file_paths):
                 'recommendations': ['Review identified issues', 'Add tests', 'Follow best practices']
             }
 
-        analysis_jobs[job_id]['status'] = 'completed'
-        analysis_jobs[job_id]['message'] = 'Analysis completed successfully'
-        analysis_jobs[job_id]['progress'] = 100
-        analysis_jobs[job_id]['vulnerabilities'] = vulnerabilities
-        analysis_jobs[job_id]['overall_assessment'] = overall_assessment
+        update_job_status(job_id, {
+            'status': 'completed',
+            'message': 'Analysis completed successfully',
+            'progress': 100,
+            'vulnerabilities': vulnerabilities,
+            'overall_assessment': overall_assessment
+        })
     except Exception as e:
-        analysis_jobs[job_id]['status'] = 'error'
-        analysis_jobs[job_id]['message'] = f'Analysis error: {str(e)}'
-        analysis_jobs[job_id]['progress'] = 0
+        update_job_status(job_id, {
+            'status': 'error',
+            'message': f'Analysis error: {str(e)}',
+            'progress': 0
+        })
 
 
 def find_solidity_files(directory):

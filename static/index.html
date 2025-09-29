@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMCVD - Smart Contract Vulnerability Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #1a1f3a;
+            --bg-tertiary: #252b47;
+            --accent-green: #00ff88;
+            --accent-red: #ff4757;
+            --accent-orange: #ff6b47;
+            --accent-blue: #3742fa;
+            --text-primary: #ffffff;
+            --text-secondary: #a4b0be;
+            --text-muted: #57606f;
+            --border-color: #2f3542;
+            --shadow-glow: rgba(0, 255, 136, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--bg-primary);
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(55, 66, 250, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 107, 71, 0.05) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-20px, -20px) scale(1.1); }
+        }
+
+        /* Matrix-style grid */
+        .matrix-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.02;
+            background-image: 
+                linear-gradient(var(--accent-green) 1px, transparent 1px),
+                linear-gradient(90deg, var(--accent-green) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'Fira Code', monospace;
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--shadow-glow);
+            animation: glow-pulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow-pulse {
+            from { filter: drop-shadow(0 0 5px var(--accent-green)); }
+            to { filter: drop-shadow(0 0 20px var(--accent-green)); }
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            margin-bottom: 30px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: var(--accent-green); box-shadow: 0 0 5px rgba(0, 255, 136, 0.3); }
+            50% { border-color: var(--accent-blue); box-shadow: 0 0 20px rgba(55, 66, 250, 0.3); }
+        }
+
+        .main-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            margin-bottom: 30px;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .main-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue), var(--accent-orange));
+            border-radius: 20px 20px 0 0;
+        }
+
+        .status-section {
+            margin-bottom: 40px;
+        }
+
+        .status-section h2 {
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-green);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .status-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: 'Fira Code', monospace;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .status-badge:hover::before {
+            left: 100%;
+        }
+
+        .status-online {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-warning {
+            background: rgba(255, 107, 71, 0.1);
+            color: var(--accent-orange);
+            border: 1px solid rgba(255, 107, 71, 0.3);
+        }
+
+        .status-critical {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--accent-red);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+
+        .feature-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            border-radius: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 255, 136, 0.1);
+            border-color: var(--accent-green);
+        }
+
+        .feature-card h3 {
+            color: var(--accent-green);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .api-section {
+            margin-top: 40px;
+            padding: 35px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .api-section h2 {
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-green);
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .api-endpoint {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+        }
+
+        .method {
+            background: #27ae60;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .method.post {
+            background: #e74c3c;
+        }
+
+        .test-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: #e8f5e8;
+            border-radius: 10px;
+            border: 2px solid #27ae60;
+        }
+
+        .btn {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 8px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
+            transition: left 0.3s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--text-primary);
+        }
+
+        .btn-success:hover {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 71, 87, 0.2);
+            box-shadow: 0 5px 20px rgba(255, 71, 87, 0.3);
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid var(--accent-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Notification System */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .notification-success .notification-content {
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .notification-error .notification-content {
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .notification-warning .notification-content {
+            border-left: 4px solid var(--accent-orange);
+        }
+
+        .notification-info .notification-content {
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .notification-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .notification-message {
+            flex: 1;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-close:hover {
+            color: var(--text-primary);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        #healthStatus {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            padding: 20px;
+        }
+
+        /* New styles for enhanced interface */
+        .tab-container {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-section, .github-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .github-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin: 10px 0;
+        }
+
+        .github-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .file-list {
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .vulnerabilities-section {
+            margin: 20px 0;
+        }
+
+        .vulnerability-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .vulnerability-header {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .severity-critical {
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .severity-high {
+            background: #ff9f43;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .severity-medium {
+            background: #feca57;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .severity-low {
+            background: #48dbfb;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .vulnerability-body {
+            padding: 15px;
+        }
+
+        .poc-section {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .github-info {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .report-section {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #27ae60;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            .main-content {
+                padding: 20px;
+            }
+            .tab-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="matrix-grid"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>⚡ SMCVD v2.0</h1>
+            <p>Smart Contract Vulnerability Detector - Enhanced Edition</p>
+            <div class="version-badge">v2.0.0-ENHANCED</div>
+        </div>
+
+        <div class="main-content">
+            <div class="status-section">
+                <h2>📊 System Status</h2>
+                <div class="status-badges">
+                    <div class="status-badge status-online">
+                        <span>🟢</span>
+                        <span>API Online</span>
+                    </div>
+                    <div class="status-badge status-warning">
+                        <span>🟡</span>
+                        <span>AI Features: Disabled</span>
+                    </div>
+                    <div class="status-badge status-online">
+                        <span>🟢</span>
+                        <span>Rate Limiting: Active</span>
+                    </div>
+                    <div class="status-badge status-online">
+                        <span>🟢</span>
+                        <span>Database: Connected</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature-card">
+                    <h3>🔍 Enhanced Detection</h3>
+                    <p>Advanced vulnerability patterns including flash loan attacks, reentrancy, and price manipulation detection.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>⚡ Rate Limited</h3>
+                    <p>Production-ready API with built-in rate limiting and caching for optimal performance.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💾 Persistent Jobs</h3>
+                    <p>Analysis jobs are saved to database and survive application restarts.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>📊 Professional Reports</h3>
+                    <p>Generate detailed HTML and PDF reports with severity classifications and remediation guidance.</p>
+                </div>
+            </div>
+
+            <div class="api-section">
+                <h2>🌐 API Endpoints</h2>
+                
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/health - System health check
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method post">POST</span> /api/analyze - Start vulnerability analysis
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/status/{job_id} - Check analysis progress
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/results/{job_id} - Get analysis results
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method post">POST</span> /api/report/generate - Generate security report
+                </div>
+
+                <div class="test-section">
+                    <h3>🧪 Quick Test</h3>
+                    <p>Test the API health endpoint:</p>
+                    <button class="btn btn-success" onclick="testHealth()">Test Health Endpoint</button>
+                    <div id="healthStatus"></div>
+                </div>
+            </div>
+
+            <!-- Analysis Interface -->
+            <div class="api-section">
+                <h2>🔍 Smart Contract Analysis</h2>
+                
+                <!-- Tab Navigation -->
+                <div class="tab-container">
+                    <button class="tab-btn active" onclick="switchTab('upload')">📁 Upload Files</button>
+                    <button class="tab-btn" onclick="switchTab('github')">📂 GitHub Repository</button>
+                    <button class="tab-btn" onclick="switchTab('results')">📊 Results</button>
+                </div>
+                
+                <!-- Upload Tab -->
+                <div id="upload-tab" class="tab-content active">
+                    <h3>Upload Smart Contract Files</h3>
+                    <div class="upload-section">
+                        <input type="file" id="fileInput" multiple accept=".sol,.vy,.fe" style="display:none">
+                        <button class="btn" onclick="document.getElementById('fileInput').click()">📁 Select Files</button>
+                        <div id="fileList" class="file-list"></div>
+                        <button class="btn btn-success" onclick="analyzeFiles()" id="analyzeBtn" disabled>🔍 Analyze Contracts</button>
+                    </div>
+                </div>
+                
+                <!-- GitHub Tab -->
+                <div id="github-tab" class="tab-content">
+                    <h3>Analyze GitHub Repository</h3>
+                    <div class="github-section">
+                        <input type="text" id="githubUrl" placeholder="https://github.com/username/repository" class="github-input">
+                        <button class="btn" onclick="validateGitHub()">✅ Validate</button>
+                        <button class="btn btn-success" onclick="analyzeGitHub()" id="githubAnalyzeBtn" disabled>🔍 Analyze Repository</button>
+                        <div id="githubInfo" class="github-info"></div>
+                    </div>
+                </div>
+                
+                <!-- Results Tab -->
+                <div id="results-tab" class="tab-content">
+                    <h3>Analysis Results</h3>
+                    <div id="analysisProgress" class="progress-section"></div>
+                    <div id="vulnerabilities" class="vulnerabilities-section"></div>
+                    <div id="reportSection" class="report-section" style="display:none">
+                        <h3>📋 Generate Bug Bounty Report</h3>
+                        <button class="btn btn-success" onclick="generateReport()">📄 Generate Report</button>
+                        <button class="btn" onclick="downloadReport('markdown')">⬇️ Download Markdown</button>
+                        <button class="btn" onclick="downloadReport('pdf')">📄 Download PDF</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="api-section">
+                <h2>💡 API Documentation</h2>
+                <p>For programmatic access, use these endpoints:</p>
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/health - System health check
+                </div>
+                <div class="api-endpoint">
+                    <span class="method post">POST</span> /api/analyze - Start analysis with files or GitHub URL
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🔐 SMCVD v2.0 - Enterprise-grade smart contract security analysis</p>
+            <p>Enhanced with rate limiting, database persistence, and comprehensive testing</p>
+        </div>
+    </div>
+
+    <script>
+        let currentJobId = null;
+        let selectedFiles = [];
+        let analysisInterval = null;
+
+        // Health check function
+        async function testHealth() {
+            const statusDiv = document.getElementById('healthStatus');
+            statusDiv.innerHTML = '🔄 Testing...';
+            statusDiv.style.background = '#fff3cd';
+            statusDiv.style.color = '#856404';
+            
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                statusDiv.innerHTML = `
+                    <strong>✅ Health Check Successful!</strong><br>
+                    Status: ${data.status}<br>
+                    Version: ${data.version}<br>
+                    AI Enabled: ${data.features.ai_enabled}<br>
+                    Database: ${data.features.db_persistence}
+                `;
+                statusDiv.style.background = '#d4edda';
+                statusDiv.style.color = '#155724';
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+            }
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+
+        // File upload handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const fileList = document.getElementById('fileList');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+
+            fileInput.addEventListener('change', function(e) {
+                selectedFiles = Array.from(e.target.files);
+                displayFileList();
+                analyzeBtn.disabled = selectedFiles.length === 0;
+            });
+        });
+
+        function displayFileList() {
+            const fileList = document.getElementById('fileList');
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '<p>No files selected</p>';
+                return;
+            }
+
+            fileList.innerHTML = '<h4>Selected Files:</h4>';
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>📄 ${file.name} (${(file.size / 1024).toFixed(2)} KB)</span>
+                    <button onclick="removeFile(${index})" class="btn" style="padding: 5px 10px; font-size: 0.8rem;">❌</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displayFileList();
+            document.getElementById('analyzeBtn').disabled = selectedFiles.length === 0;
+        }
+
+        // Analyze uploaded files
+        async function analyzeFiles() {
+            if (selectedFiles.length === 0) return;
+
+            const fileContents = [];
+            for (let file of selectedFiles) {
+                const content = await readFileContent(file);
+                fileContents.push({
+                    name: file.name,
+                    content: content
+                });
+            }
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ files: fileContents })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    currentJobId = data.job_id;
+                    switchTab('results');
+                    startProgressTracking();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // GitHub validation and analysis
+        async function validateGitHub() {
+            const githubUrl = document.getElementById('githubUrl').value.trim();
+            if (!githubUrl) {
+                showNotification('Please enter a GitHub URL', 'warning');
+                return;
+            }
+
+            const validateBtn = document.querySelector('[onclick="validateGitHub()"]');
+            const originalText = validateBtn.innerHTML;
+            validateBtn.classList.add('btn-loading');
+            validateBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/github/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: githubUrl })
+                });
+
+                const data = await response.json();
+                const infoDiv = document.getElementById('githubInfo');
+                const analyzeBtn = document.getElementById('githubAnalyzeBtn');
+
+                if (data.valid) {
+                    infoDiv.innerHTML = `
+                        <div class="github-repo-info">
+                            <h4 style="color: var(--accent-green); margin-bottom: 15px;">✅ Repository Validated</h4>
+                            <div class="repo-details">
+                                <p><strong>Repository:</strong> ${data.repository?.full_name || 'Unknown'}</p>
+                                <p><strong>Language:</strong> ${data.repository?.language || 'Unknown'}</p>
+                                <p><strong>Solidity Files:</strong> <span class="file-count">${data.solidity_files || 0}</span></p>
+                                <p><strong>Description:</strong> ${data.repository?.description || 'No description'}</p>
+                            </div>
+                        </div>
+                    `;
+                    analyzeBtn.disabled = false;
+                    showNotification('Repository validated successfully!', 'success');
+                } else {
+                    infoDiv.innerHTML = `
+                        <div class="error-message">
+                            <h4 style="color: var(--accent-red); margin-bottom: 10px;">❌ Validation Failed</h4>
+                            <p>${data.message}</p>
+                        </div>
+                    `;
+                    analyzeBtn.disabled = true;
+                    showNotification('Repository validation failed', 'error');
+                }
+            } catch (error) {
+                document.getElementById('githubInfo').innerHTML = `
+                    <div class="error-message">
+                        <h4 style="color: var(--accent-red); margin-bottom: 10px;">❌ Connection Error</h4>
+                        <p>Failed to validate repository: ${error.message}</p>
+                    </div>
+                `;
+                showNotification('Connection error during validation', 'error');
+            } finally {
+                validateBtn.classList.remove('btn-loading');
+                validateBtn.disabled = false;
+                validateBtn.innerHTML = originalText;
+            }
+        }
+
+        async function analyzeGitHub() {
+            const githubUrl = document.getElementById('githubUrl').value.trim();
+            if (!githubUrl) return;
+
+            const analyzeBtn = document.getElementById('githubAnalyzeBtn');
+            const originalText = analyzeBtn.innerHTML;
+            analyzeBtn.classList.add('btn-loading');
+            analyzeBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ github_url: githubUrl })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    currentJobId = data.job_id;
+                    showNotification('Analysis started successfully!', 'success');
+                    switchTab('results');
+                    startProgressTracking();
+                } else {
+                    showNotification('Analysis failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showNotification('Connection error: ' + error.message, 'error');
+            } finally {
+                analyzeBtn.classList.remove('btn-loading');
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = originalText;
+            }
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">${getNotificationIcon(type)}</span>
+                    <span class="notification-message">${message}</span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: '📊'
+            };
+            return icons[type] || icons.info;
+        }
+
+        // Progress tracking
+        function startProgressTracking() {
+            if (!currentJobId) return;
+
+            const progressSection = document.getElementById('analysisProgress');
+            progressSection.innerHTML = `
+                <h4>🔄 Analysis in Progress</h4>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%;">0%</div>
+                </div>
+                <p id="statusMessage">Initializing...</p>
+            `;
+
+            analysisInterval = setInterval(checkAnalysisStatus, 2000);
+        }
+
+        async function checkAnalysisStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`/api/status/${currentJobId}`);
+                const data = await response.json();
+
+                const progressFill = document.querySelector('.progress-fill');
+                const statusMessage = document.getElementById('statusMessage');
+
+                if (progressFill) {
+                    progressFill.style.width = data.progress + '%';
+                    progressFill.textContent = data.progress + '%';
+                }
+
+                if (statusMessage) {
+                    statusMessage.textContent = data.message || 'Processing...';
+                }
+
+                if (data.status === 'completed') {
+                    clearInterval(analysisInterval);
+                    loadAnalysisResults();
+                } else if (data.status === 'error') {
+                    clearInterval(analysisInterval);
+                    document.getElementById('analysisProgress').innerHTML = `
+                        <h4 style="color: #e74c3c;">❌ Analysis Failed</h4>
+                        <p>${data.message}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
+            }
+        }
+
+        async function loadAnalysisResults() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`/api/results/${currentJobId}`);
+                const data = await response.json();
+
+                document.getElementById('analysisProgress').innerHTML = `
+                    <h4 style="color: #27ae60;">✅ Analysis Complete</h4>
+                    <p>Found ${data.vulnerabilities.length} potential vulnerabilities</p>
+                `;
+
+                displayVulnerabilities(data.vulnerabilities);
+                
+                if (data.vulnerabilities.length > 0) {
+                    document.getElementById('reportSection').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading results:', error);
+            }
+        }
+
+        function displayVulnerabilities(vulnerabilities) {
+            const vulnSection = document.getElementById('vulnerabilities');
+            
+            if (vulnerabilities.length === 0) {
+                vulnSection.innerHTML = '<p>🎉 No vulnerabilities found! The contract appears to be secure.</p>';
+                return;
+            }
+
+            let html = '<h4>🚨 Discovered Vulnerabilities:</h4>';
+            vulnerabilities.forEach((vuln, index) => {
+                html += `
+                    <div class="vulnerability-card">
+                        <div class="vulnerability-header">
+                            <h5>${vuln.name}</h5>
+                            <span class="severity-${vuln.severity}">${vuln.severity.toUpperCase()}</span>
+                        </div>
+                        <div class="vulnerability-body">
+                            <p><strong>File:</strong> ${vuln.file_path} (Line ${vuln.line_number})</p>
+                            <p><strong>Description:</strong> ${vuln.description}</p>
+                            <p><strong>Impact:</strong> ${vuln.impact}</p>
+                            <p><strong>Confidence:</strong> ${Math.round(vuln.confidence * 100)}%</p>
+                            
+                            ${vuln.detailed_description ? `<p><strong>Technical Details:</strong> ${vuln.detailed_description}</p>` : ''}
+                            
+                            ${vuln.attack_scenarios ? `
+                                <h6>Attack Scenarios:</h6>
+                                <p>${vuln.attack_scenarios}</p>
+                            ` : ''}
+                            
+                            ${vuln.poc_code ? `
+                                <h6>Proof of Concept:</h6>
+                                <div class="poc-section">${vuln.poc_code}</div>
+                            ` : ''}
+                            
+                            <h6>Mitigation:</h6>
+                            <p>${vuln.mitigation || vuln.recommended_fix}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            vulnSection.innerHTML = html;
+        }
+
+        // Report generation
+        async function generateReport() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch('/api/report/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        job_id: currentJobId,
+                        format: 'markdown',
+                        template: 'professional'
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert('✅ Report generated successfully!');
+                } else {
+                    alert('Error generating report: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function downloadReport(format) {
+            if (!currentJobId) return;
+
+            try {
+                // First generate the report
+                const reportResponse = await fetch('/api/report/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        job_id: currentJobId,
+                        format: 'markdown',
+                        template: 'professional'
+                    })
+                });
+
+                const reportData = await reportResponse.json();
+                if (!reportResponse.ok) {
+                    alert('Error generating report: ' + reportData.error);
+                    return;
+                }
+
+                // Then download it
+                const downloadResponse = await fetch('/api/report/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        markdown: reportData.markdown,
+                        format: format,
+                        filename: `security_report_${currentJobId}`
+                    })
+                });
+
+                if (downloadResponse.ok) {
+                    const blob = await downloadResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `security_report_${currentJobId}.${format === 'pdf' ? 'pdf' : 'md'}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Error downloading report');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Auto-test health on page load
+        window.onload = function() {
+            setTimeout(testHealth, 1000);
+        };
+    </script>
+</body>
+</html>

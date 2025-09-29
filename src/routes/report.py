@@ -2,6 +2,15 @@ from flask import Blueprint, request, jsonify, send_file
 from flask_cors import cross_origin
 import io
 
+# Try to import rate limiting
+try:
+    from src.middleware.rate_limiting import rate_limit
+except ImportError:
+    def rate_limit(*args, **kwargs):
+        def decorator(f):
+            return f
+        return decorator
+
 from src.services.report_service import ReportService
 from src.routes.analysis import analysis_jobs
 from src.routes.report_utils import markdown_to_html  # will add helper
@@ -12,6 +21,7 @@ report_bp = Blueprint('report', __name__)
 
 @report_bp.route('/report/generate', methods=['POST'])
 @cross_origin()
+@rate_limit(limit=10, window=60)  # 10 reports per minute
 def generate_report():
     try:
         data = request.get_json()

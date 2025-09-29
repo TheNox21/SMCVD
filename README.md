@@ -102,7 +102,9 @@ curl -X POST http://localhost:5000/api/report/generate \
 - Inline suppressions:
   - Line: `// analyzer-ignore: reentrancy`
   - File: `// analyzer-ignore-file: integer_overflow`
-- Tune via `MIN_CONFIDENCE` (higher = fewer findings).
+- Advanced multi-signal verification reduces false positives by cross-referencing multiple indicators.
+- Contextual analysis identifies likely false positives in view functions, validation checks, and constructors.
+- Tune via `MIN_CONFIDENCE` (higher = fewer findings). Default is now 0.8 for better precision.
 
 ## Notes
 - PDF output via WeasyPrint is optional and not required for core usage. On Windows it may need extra system dependencies; Markdown export works out of the box.

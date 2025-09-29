@@ -1,5 +1,14 @@
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
+
+# Try to import rate limiting
+try:
+    from src.middleware.rate_limiting import rate_limit
+except ImportError:
+    def rate_limit(*args, **kwargs):
+        def decorator(f):
+            return f
+        return decorator
 from src.services.github_service import GitHubService
 
 
@@ -8,6 +17,7 @@ github_bp = Blueprint('github', __name__)
 
 @github_bp.route('/github/validate', methods=['POST'])
 @cross_origin()
+@rate_limit(limit=15, window=60)  # 15 validations per minute
 def validate_github_url():
     try:
         data = request.get_json()
