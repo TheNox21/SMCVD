@@ -1,0 +1,59 @@
+{
+  "job_id": "78adeb37-a7fb-4fe3-b4b9-60302d9ba947",
+  "overall_assessment": {
+    "financial_impact": "Unknown",
+    "recommendations": [
+      "Manual security review recommended"
+    ],
+    "risk_level": "critical",
+    "summary": "Assessment generation failed: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}"
+  },
+  "summary": {
+    "files_analyzed": 3,
+    "severity_breakdown": {
+      "critical": 1,
+      "high": 0,
+      "info": 0,
+      "low": 0,
+      "medium": 1
+    },
+    "total_files": 3,
+    "vulnerabilities_found": 2
+  },
+  "vulnerabilities": [
+    {
+      "ai_error": "AI enhancement failed: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}",
+      "confidence": 0.81,
+      "cwe": "CWE-829",
+      "description": "Reliance on block timestamp for critical operations",
+      "file_path": "oracle.sol",
+      "function_name": "SetCheckpoint",
+      "id": "timestamp_dependence_9410",
+      "impact": "Manipulation of time-based logic, unfair advantages",
+      "line_content": "if (block.number < (_sectionIndex+1)*sectionSize+processConfirms) {",
+      "line_number": 60,
+      "mitigation": "Avoid using block.timestamp for critical logic, use block numbers",
+      "name": "Timestamp Dependence",
+      "poc": null,
+      "severity": "medium",
+      "type": "timestamp_dependence"
+    },
+    {
+      "ai_error": "AI enhancement failed: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}",
+      "confidence": 0.9,
+      "cwe": "CWE-284",
+      "description": "Self-destruct function without proper access control",
+      "file_path": "OpCodes.sol",
+      "function_name": "f",
+      "id": "unprotected_selfdestruct_5619",
+      "impact": "Contract destruction, permanent loss of funds",
+      "line_content": "assembly { selfdestruct(0x02) }",
+      "line_number": 297,
+      "mitigation": "Add access control to selfdestruct functions",
+      "name": "Unprotected Self-Destruct",
+      "poc": null,
+      "severity": "critical",
+      "type": "unprotected_selfdestruct"
+    }
+  ]
+}

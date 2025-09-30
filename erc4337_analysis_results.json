@@ -1,0 +1,76 @@
+{
+  "job_id": "8b95e270-7a87-4567-8f26-ecc241dc3c8c",
+  "overall_assessment": {
+    "financial_impact": "Unknown",
+    "recommendations": [
+      "Manual security review recommended"
+    ],
+    "risk_level": "medium",
+    "summary": "Assessment generation failed: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}"
+  },
+  "summary": {
+    "files_analyzed": 46,
+    "severity_breakdown": {
+      "critical": 0,
+      "high": 0,
+      "info": 0,
+      "low": 0,
+      "medium": 3
+    },
+    "total_files": 46,
+    "vulnerabilities_found": 3
+  },
+  "vulnerabilities": [
+    {
+      "ai_error": "AI enhancement failed: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}",
+      "confidence": 0.9,
+      "cwe": "CWE-829",
+      "description": "Reliance on block timestamp for critical operations",
+      "file_path": "EntryPoint.sol",
+      "function_name": "_validateAccountPrepayment",
+      "id": "timestamp_dependence_3815",
+      "impact": "Manipulation of time-based logic, unfair advantages",
+      "line_content": "outOfTimeRange = block.timestamp > data.validUntil || block.timestamp < data.validAfter;",
+      "line_number": 426,
+      "mitigation": "Avoid using block.timestamp for critical logic, use block numbers",
+      "name": "Timestamp Dependence",
+      "poc": null,
+      "severity": "medium",
+      "type": "timestamp_dependence"
+    },
+    {
+      "ai_error": "AI enhancement failed: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}",
+      "confidence": 0.8,
+      "cwe": "CWE-252",
+      "description": "External call without checking return value",
+      "file_path": "EntryPoint.sol",
+      "function_name": "handleAggregatedOps",
+      "id": "unchecked_external_call_962",
+      "impact": "Silent failures, unexpected behavior",
+      "line_content": "(targetSuccess, targetResult) = target.call(targetCallData);",
+      "line_number": 165,
+      "mitigation": "Always check return values of external calls",
+      "name": "Unchecked External Call",
+      "poc": null,
+      "severity": "medium",
+      "type": "unchecked_external_call"
+    },
+    {
+      "ai_error": "AI enhancement failed: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}",
+      "confidence": 0.81,
+      "cwe": "CWE-829",
+      "description": "Reliance on block timestamp for critical operations",
+      "file_path": "StakeManager.sol",
+      "function_name": "addStake",
+      "id": "timestamp_dependence_7363",
+      "impact": "Manipulation of time-based logic, unfair advantages",
+      "line_content": "uint48 withdrawTime = uint48(block.timestamp) + info.unstakeDelaySec;",
+      "line_number": 72,
+      "mitigation": "Avoid using block.timestamp for critical logic, use block numbers",
+      "name": "Timestamp Dependence",
+      "poc": null,
+      "severity": "medium",
+      "type": "timestamp_dependence"
+    }
+  ]
+}
